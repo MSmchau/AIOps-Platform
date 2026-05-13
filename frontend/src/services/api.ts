@@ -53,6 +53,12 @@ export const deviceApi = {
   backup: (id: number) => api.post(`/devices/${id}/backup`),
   reboot: (id: number) => api.post(`/devices/${id}/reboot`),
   batchExecute: (data: { device_ids: number[]; command: string }) => api.post('/devices/batch/execute', data),
+  importDevices: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/devices/import', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+  exportDevices: () => api.get('/devices/export', { responseType: 'blob' }),
 };
 
 // ===== 告警处置 =====

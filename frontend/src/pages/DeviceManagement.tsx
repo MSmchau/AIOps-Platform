@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Table, Card, Button, Input, Select, Tag, Space, Modal, Form, message, Popconfirm, Row, Col, Statistic, Badge, Tooltip, Descriptions, Drawer } from 'antd'
-import { PlusOutlined, ReloadOutlined, PoweroffOutlined, CodeOutlined, CopyOutlined, DeleteOutlined, DashboardOutlined } from '@ant-design/icons'
+import { PlusOutlined, ReloadOutlined, PoweroffOutlined, CodeOutlined, CopyOutlined, DeleteOutlined, DashboardOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons'
 import { deviceApi } from '../services/api'
 import type { Device, DeviceCreate } from '../types'
 import ReactEChartsCore from 'echarts-for-react'
@@ -30,6 +30,11 @@ export default function DeviceManagement() {
   // 状态监控抽屉
   const [monitorOpen, setMonitorOpen] = useState(false);
   const [monitorDevice, setMonitorDevice] = useState<Device | null>(null);
+
+  // 批量导入
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const fetchDevices = async () => {
     setLoading(true);
@@ -110,6 +115,43 @@ export default function DeviceManagement() {
     setMonitorOpen(true);
   };
 
+  // 批量导出
+  const handleExport = async () => {
+    try {
+      const res = await deviceApi.exportDevices();
+      const blob = new Blob([res.data], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `devices_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      message.success('设备列表已导出');
+    } catch { message.error('导出失败'); }
+  };
+
+  // 批量导入
+  const handleImport = async () => {
+    if (!importFile) { message.warning('请选择CSV文件'); return; }
+    setImporting(true);
+    try {
+      const res = await deviceApi.importDevices(importFile);
+      const data = res.data;
+      message.success(`成功导入 ${data.imported} 台设备${data.errors.length > 0 ? `，${data.errors.length} 条错误` : ''}`);
+      if (data.errors.length > 0) {
+        Modal.warning({
+          title: '导入错误详情',
+          content: <pre style={{ maxHeight: 300, overflow: 'auto', fontSize: 12 }}>{data.errors.join('\n')}</pre>,
+          width: 500,
+        });
+      }
+      setImportModalOpen(false);
+      setImportFile(null);
+      fetchDevices();
+    } catch (err: any) { message.error(err.response?.data?.detail || '导入失败'); }
+    finally { setImporting(false); }
+  };
+
   // 构造模拟时序数据
   const metricChartOption = {
     tooltip: { trigger: 'axis' },
@@ -168,6 +210,8 @@ export default function DeviceManagement() {
           <Col flex="auto" style={{ textAlign: 'right' }}>
             <Space>
               <Button icon={<ReloadOutlined />} onClick={fetchDevices}>刷新</Button>
+              <Button icon={<DownloadOutlined />} onClick={handleExport}>导出</Button>
+              <Button icon={<UploadOutlined />} onClick={() => setImportModalOpen(true)}>导入</Button>
               {selectedRowKeys.length > 0 && (
                 <>
                   <Badge count={selectedRowKeys.length}><Button onClick={handleBatchBackup}>批量备份</Button></Badge>
@@ -231,6 +275,22 @@ export default function DeviceManagement() {
               {cmdResult}
             </pre>
           )}
+        </Space>
+      </Modal>
+      {/* 批量导入弹窗 */}
+      <Modal title="批量导入设备" open={importModalOpen} onCancel={() => { setImportModalOpen(false); setImportFile(null); }}
+        onOk={handleImport} confirmLoading={importing} okText="导入" width={500}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <div style={{ background: '#f5f5f5', padding: 12, borderRadius: 4, fontSize: 13 }}>
+            <p><strong>CSV格式要求：</strong></p>
+            <p>必填列：name, ip_address, vendor</p>
+            <p>可选列：model, device_type, status, location, description</p>
+            <p style={{ color: '#999', marginTop: 4 }}>示例：name,ip_address,vendor,model,device_type,status</p>
+            <p style={{ color: '#999' }}>SW01,192.168.1.1,华为,CE12808,switch,online</p>
+          </div>
+          <input type="file" accept=".csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} />
+          {importFile && <Tag color="blue">{importFile.name}</Tag>}
         </Space>
       </Modal>
       {/* 状态监控抽屉 */}
