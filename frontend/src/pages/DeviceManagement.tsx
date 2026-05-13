@@ -236,6 +236,11 @@ export default function DeviceManagement() {
           <Form.Item name="vendor" label="厂商" rules={[{ required: true }]}><Select options={[{ value: '华为', label: '华为' }, { value: 'H3C', label: 'H3C' }, { value: '思科', label: '思科' }]} /></Form.Item>
           <Form.Item name="device_type" label="设备类型"><Select options={[{ value: 'switch', label: '交换机' }, { value: 'router', label: '路由器' }, { value: 'firewall', label: '防火墙' }]} /></Form.Item>
           <Form.Item name="model" label="型号"><Input /></Form.Item>
+          <Form.Item name="ssh_port" label="SSH端口" initialValue={22}><Input type="number" /></Form.Item>
+          <Form.Item name="ssh_username" label="SSH用户名"><Input placeholder="如: admin" /></Form.Item>
+          <Form.Item name="ssh_password" label="SSH密码"><Input.Password placeholder="设备SSH登录密码" /></Form.Item>
+          <Form.Item name="enable_password" label="Enable密码"><Input.Password placeholder="特权模式密码（可选）" /></Form.Item>
+          <Form.Item name="snmp_community" label="SNMP Community"><Input placeholder="如: public" /></Form.Item>
           <Form.Item name="location" label="位置"><Input /></Form.Item>
           <Form.Item name="description" label="描述"><Input.TextArea rows={3} /></Form.Item>
         </Form>
