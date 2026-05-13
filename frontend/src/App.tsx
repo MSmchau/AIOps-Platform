@@ -43,7 +43,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage onLogin={setUser} />} />
         <Route
-          path="/"
+          path="/*"
           element={
             <ProtectedRoute>
               <AppLayout user={user} onLogout={() => { localStorage.clear(); setUser(null); }}>
