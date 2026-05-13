@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 # 注册路由
-from app.api import auth, dashboard, devices, alerts, configs, inspections, logs, chat, system
+from app.api import auth, dashboard, devices, alerts, configs, inspections, logs, chat, system, debug
 app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(devices.router)
@@ -41,6 +41,7 @@ app.include_router(inspections.router)
 app.include_router(logs.router)
 app.include_router(chat.router)
 app.include_router(system.router)
+app.include_router(debug.router)
 
 
 @app.get("/api/health")

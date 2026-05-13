@@ -107,10 +107,12 @@ def seed_data():
             ))
 
         db.commit()
-        print("[Seed] 数据库初始化完成")
+        print(f"[Seed] 数据库初始化完成 - 角色:{len(roles)} 用户:{len(users)} 设备:{len(devices)} 告警:{len(alerts_data)}")
     except Exception as e:
         db.rollback()
         print(f"[Seed] 初始化错误: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         db.close()
 

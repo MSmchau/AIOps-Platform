@@ -28,4 +28,9 @@ def get_db():
 
 def init_db():
     """创建所有表"""
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("[DB] 数据库表初始化完成")
+    except Exception as e:
+        print(f"[DB] 数据库表初始化失败: {e}")
+        raise
