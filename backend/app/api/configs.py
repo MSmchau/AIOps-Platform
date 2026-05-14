@@ -12,7 +12,7 @@ from app.schemas.config_schema import (
 )
 from app.api.auth import get_current_user
 from app.services.netmiko_service import NetmikoService
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/configs", tags=["配置管理"])
 
@@ -50,7 +50,7 @@ async def run_backup(
             device_name=device.name,
             config_content=result.get("config", ""),
             status="success" if result["success"] else "failed",
-            version=datetime.utcnow().strftime("V%Y%m%d%H%M%S"),
+            version=datetime.now(timezone.utc).strftime("V%Y%m%d%H%M%S"),
         )
         db.add(backup)
         results.append({"device_id": did, "device_name": device.name, "success": result["success"]})

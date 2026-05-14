@@ -1,23 +1,28 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Spin } from 'antd'
 import { authApi } from './services/api'
 import AppLayout from './components/AppLayout'
 import LoginPage from './pages/LoginPage'
-import Dashboard from './pages/Dashboard'
-import DeviceManagement from './pages/DeviceManagement'
-import AlertManagement from './pages/AlertManagement'
-import ConfigManagement from './pages/ConfigManagement'
-import Inspection from './pages/Inspection'
-import LogAnalysis from './pages/LogAnalysis'
-import ChatPage from './pages/ChatPage'
-import SystemSettings from './pages/SystemSettings'
 import type { User } from './types'
+
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const DeviceManagement = lazy(() => import('./pages/DeviceManagement'))
+const AlertManagement = lazy(() => import('./pages/AlertManagement'))
+const ConfigManagement = lazy(() => import('./pages/ConfigManagement'))
+const Inspection = lazy(() => import('./pages/Inspection'))
+const LogAnalysis = lazy(() => import('./pages/LogAnalysis'))
+const ChatPage = lazy(() => import('./pages/ChatPage'))
+const SystemSettings = lazy(() => import('./pages/SystemSettings'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('aiops_token');
   if (!token) return <Navigate to="/login" replace />;
   return <>{children}</>;
+}
+
+function PageLoading() {
+  return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}><Spin size="large" /></div>;
 }
 
 export default function App() {
@@ -47,16 +52,18 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AppLayout user={user} onLogout={() => { localStorage.clear(); setUser(null); }}>
-                <Routes>
-                  <Route index element={<Dashboard />} />
-                  <Route path="devices" element={<DeviceManagement />} />
-                  <Route path="alerts" element={<AlertManagement />} />
-                  <Route path="configs" element={<ConfigManagement />} />
-                  <Route path="inspections" element={<Inspection />} />
-                  <Route path="logs" element={<LogAnalysis />} />
-                  <Route path="chat" element={<ChatPage />} />
-                  <Route path="settings" element={<SystemSettings />} />
-                </Routes>
+                <Suspense fallback={<PageLoading />}>
+                  <Routes>
+                    <Route index element={<Dashboard />} />
+                    <Route path="devices" element={<DeviceManagement />} />
+                    <Route path="alerts" element={<AlertManagement />} />
+                    <Route path="configs" element={<ConfigManagement />} />
+                    <Route path="inspections" element={<Inspection />} />
+                    <Route path="logs" element={<LogAnalysis />} />
+                    <Route path="chat" element={<ChatPage />} />
+                    <Route path="settings" element={<SystemSettings />} />
+                  </Routes>
+                </Suspense>
               </AppLayout>
             </ProtectedRoute>
           }

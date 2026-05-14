@@ -13,7 +13,7 @@ import uuid
 import os
 
 # 创建测试用FastAPI应用（不含lifespan）
-from app.api import auth, dashboard, devices, alerts, configs, inspections, logs, chat, system
+from app.api import auth, dashboard, devices, alerts, configs, inspections, logs, chat, system, debug
 
 test_app = FastAPI(title="AIOps-Test")
 from fastapi.middleware.cors import CORSMiddleware
@@ -33,6 +33,7 @@ test_app.include_router(inspections.router)
 test_app.include_router(logs.router)
 test_app.include_router(chat.router)
 test_app.include_router(system.router)
+test_app.include_router(debug.router)
 
 
 @test_app.get("/api/health")
@@ -179,6 +180,87 @@ class TestChat:
         headers = {"Authorization": f"Bearer {token}"}
         client.post("/api/chat", json={"message": "test"}, headers=headers)
         resp = client.get("/api/chat/history", headers=headers)
+        assert resp.status_code == 200
+
+
+class TestConfigs:
+    def test_backups(self):
+        token = get_token()
+        resp = client.get("/api/configs/backups", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        assert len(resp.json()) > 0
+
+    def test_baselines(self):
+        token = get_token()
+        resp = client.get("/api/configs/baselines", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        assert len(resp.json()) > 0
+
+
+class TestInspections:
+    def test_list_tasks(self):
+        token = get_token()
+        resp = client.get("/api/inspections/tasks", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        assert len(resp.json()) > 0
+
+    def test_create_task(self):
+        token = get_token()
+        resp = client.post("/api/inspections/tasks", json={"name": "新巡检"},
+                           headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+
+
+class TestDevicesAdvanced:
+    def test_import_export(self):
+        token = get_token()
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # 测试导出
+        resp = client.get("/api/devices/export", headers=headers)
+        if resp.status_code != 200:
+            print(f"EXPORT DEBUG - Status: {resp.status_code}, Response: {resp.text[:300]}")
+        assert resp.status_code == 200
+
+        # 测试导入 - 使用字符串拼接构建CSV
+        csv_lines = ["name,ip_address,vendor,model,device_type"]
+        csv_lines.append("Import-SW1,10.10.10.1,Huawei,CE12808,switch")
+        csv_lines.append("Import-SW2,10.10.10.2,H3C,S5560X,switch")
+        csv_content = "\n".join(csv_lines).encode("utf-8")
+
+        resp = client.post("/api/devices/import",
+                           files={"file": ("test.csv", csv_content, "text/csv")},
+                           headers=headers)
+        if resp.status_code != 200:
+            print(f"IMPORT DEBUG - Status: {resp.status_code}, Response: {resp.text[:500]}")
+            print(f"Request headers: {{'Authorization': 'Bearer ...', 'Content-Type': '...'}}")
+        assert resp.status_code == 200, f"Import failed: {resp.status_code}"
+        data = resp.json()
+        assert data["imported"] == 2
+
+        # 验证导入成功
+        resp = client.get("/api/devices?keyword=Import-SW1", headers=headers)
+        assert resp.status_code == 200
+        assert len(resp.json()) > 0
+
+    def test_import_invalid_file(self):
+        token = get_token()
+        resp = client.post("/api/devices/import",
+                           files={"file": ("test.txt", b"hello", "text/plain")},
+                           headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 400
+
+
+class TestLogs:
+    def test_list_logs(self):
+        token = get_token()
+        resp = client.get("/api/logs", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        assert len(resp.json()) > 0
+
+    def test_trend(self):
+        token = get_token()
+        resp = client.get("/api/logs/trend", headers={"Authorization": f"Bearer {token}"})
         assert resp.status_code == 200
 
 

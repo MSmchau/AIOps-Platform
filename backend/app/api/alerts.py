@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models.alert import Alert, AlertNotificationConfig
 from app.models.user import User
@@ -57,7 +57,7 @@ def handle_alert(
         raise HTTPException(status_code=404, detail="告警不存在")
     alert.status = data.status
     alert.handled_by = current_user.id
-    alert.handled_at = datetime.utcnow()
+    alert.handled_at = datetime.now(timezone.utc)
     alert.handler_notes = data.handler_notes
     db.commit()
     return {"message": "处置成功"}

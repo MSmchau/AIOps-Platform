@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from app.database import get_db
 from app.models.device import Device
 from app.models.alert import Alert
@@ -36,7 +36,7 @@ def get_dashboard_stats(
     device_distribution = [{"name": v, "value": c} for v, c in vendor_counts]
 
     # 近7天告警趋势
-    seven_days_ago = datetime.utcnow() - timedelta(days=7)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
     trend_data = (
         db.query(
             func.date(Alert.created_at).label("date"),

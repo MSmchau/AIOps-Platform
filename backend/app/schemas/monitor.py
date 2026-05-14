@@ -1,5 +1,5 @@
 """监控、巡检、日志Schema"""
-from pydantic import BaseModel, Field
+from pydantic import ConfigDict, BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -22,8 +22,7 @@ class InspectionTaskResponse(BaseModel):
     last_run_at: Optional[datetime] = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class InspectionResultResponse(BaseModel):
@@ -37,8 +36,7 @@ class InspectionResultResponse(BaseModel):
     detail: Optional[str] = None
     inspected_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class LogFilter(BaseModel):
@@ -61,5 +59,4 @@ class LogResponse(BaseModel):
     anomaly_reason: Optional[str] = None
     logged_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

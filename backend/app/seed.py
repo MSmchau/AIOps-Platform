@@ -6,7 +6,7 @@ from app.models.alert import Alert
 from app.models.config import ConfigBackup, ConfigBaseline
 from app.models.monitor import InspectionTask, LogEntry, ChatHistory
 from passlib.context import CryptContext
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 import random
 import uuid
 
@@ -60,7 +60,7 @@ def seed_data():
         db.flush()
 
         # === 告警 ===
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         alerts_data = [
             Alert(alert_id=f"ALT-{uuid.uuid4().hex[:8].upper()}", device_id=devices[1].id, device_name=devices[1].name, device_ip=devices[1].ip_address, level="critical", title="核心交换机CPU过载", content=f"{devices[1].name} CPU使用率持续超过95%", alert_type="system", status="open", is_auto_recovery=True, first_occurred=now - timedelta(hours=2), last_occurred=now),
             Alert(alert_id=f"ALT-{uuid.uuid4().hex[:8].upper()}", device_id=devices[5].id, device_name=devices[5].name, device_ip=devices[5].ip_address, level="critical", title="设备离线告警", content=f"{devices[5].name} 已离线超过30分钟", alert_type="system", status="open", is_auto_recovery=False, first_occurred=now - timedelta(hours=5), last_occurred=now - timedelta(minutes=30)),

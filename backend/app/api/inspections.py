@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from app.database import get_db
 from app.models.monitor import InspectionTask, InspectionResult
 from app.models.device import Device
@@ -76,7 +76,7 @@ def run_task(task_id: int, db: Session = Depends(get_db), _: User = Depends(get_
             results.append(result)
 
     task.status = "completed"
-    task.last_run_at = datetime.utcnow()
+    task.last_run_at = datetime.now(timezone.utc)
     db.commit()
     return results
 

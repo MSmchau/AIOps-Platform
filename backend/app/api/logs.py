@@ -8,7 +8,7 @@ from app.models.user import User
 from app.schemas.monitor import LogFilter, LogResponse
 from app.api.auth import get_current_user
 from app.services.ai_service import AIService
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/logs", tags=["日志分析"])
 
@@ -53,16 +53,20 @@ def analyze_log(log_id: int, db: Session = Depends(get_db), _: User = Depends(ge
 
 @router.get("/trend")
 def get_log_trend(db: Session = Depends(get_db), _: User = Depends(get_current_user)):
-    from sqlalchemy import func
+    from sqlalchemy import func, text
     from datetime import timedelta
+    from app.config import settings
 
-    since = datetime.utcnow() - timedelta(hours=24)
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    is_sqlite = settings.database_url.startswith("sqlite")
+
+    if is_sqlite:
+        hour_expr = func.strftime("%Y-%m-%d %H:00", LogEntry.logged_at).label("hour")
+    else:
+        hour_expr = func.date_format(LogEntry.logged_at, "%%Y-%%m-%%d %%H:00").label("hour")
+
     data = (
-        db.query(
-            func.date_format(LogEntry.logged_at, "%%Y-%%m-%%d %%H:00").label("hour"),
-            LogEntry.level,
-            func.count(LogEntry.id),
-        )
+        db.query(hour_expr, LogEntry.level, func.count(LogEntry.id))
         .filter(LogEntry.logged_at >= since)
         .group_by("hour", LogEntry.level)
         .all()

@@ -10,7 +10,7 @@ from app.models.user import User
 from app.schemas.device import DeviceCreate, DeviceUpdate, DeviceResponse, DeviceBatchCommand
 from app.api.auth import get_current_user
 from app.services.netmiko_service import NetmikoService
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/devices", tags=["设备管理"])
 
@@ -40,6 +40,35 @@ def list_devices(
     total = query.count()
     devices = query.offset((page - 1) * page_size).limit(page_size).all()
     return devices
+
+
+@router.get("/export")
+def export_devices(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """批量导出设备为CSV"""
+    all_devices = db.query(Device).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["name", "ip_address", "vendor", "model", "device_type", "status",
+                      "cpu_usage", "memory_usage", "location", "description"])
+
+    for d in all_devices:
+        writer.writerow([
+            d.name, d.ip_address, d.vendor, d.model or "", d.device_type,
+            d.status, d.cpu_usage, d.memory_usage, d.location or "", d.description or "",
+        ])
+
+    csv_content = output.getvalue()
+    output.close()
+
+    return Response(
+        content=csv_content,
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=devices_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"},
+    )
 
 
 @router.get("/{device_id}", response_model=DeviceResponse)
@@ -179,32 +208,3 @@ async def import_devices(
         "errors": errors,
         "total": imported + len(errors),
     }
-
-
-@router.get("/export")
-def export_devices(
-    db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
-):
-    """批量导出设备为CSV"""
-    devices = db.query(Device).all()
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["name", "ip_address", "vendor", "model", "device_type", "status",
-                      "cpu_usage", "memory_usage", "location", "description"])
-
-    for d in devices:
-        writer.writerow([
-            d.name, d.ip_address, d.vendor, d.model or "", d.device_type,
-            d.status, d.cpu_usage, d.memory_usage, d.location or "", d.description or "",
-        ])
-
-    csv_content = output.getvalue()
-    output.close()
-
-    return Response(
-        content=csv_content,
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=devices_{datetime.utcnow().strftime('%Y%m%d')}.csv"},
-    )
